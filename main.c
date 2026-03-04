@@ -1,15 +1,4 @@
 
-/** @file
- *
- * @defgroup estc_adverts main.c
- * @{
- * @ingroup estc_templates
- * @brief ESTC Advertisments template app.
- *
- * This file contains a template for creating a new BLE application with GATT services. It has
- * the code necessary to advertise, get a connection, restart advertising on disconnect.
- */
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -43,31 +32,29 @@
 #include "nrf_log_backend_usb.h"
 #include "estc_service.h"
 
-#define DEVICE_NAME                     "Mikhail Shvets"                                  /**< Name of device. Will be included in the advertising data. */
-#define MANUFACTURER_NAME               "NordicSemiconductor"                   /**< Manufacturer. Will be passed to Device Information Service. */
-#define APP_ADV_INTERVAL                300                                     /**< The advertising interval (in units of 0.625 ms. This value corresponds to 187.5 ms). */
+#define DEVICE_NAME                     ""Sensor Module"                                
+#define MANUFACTURER_NAME               "NordicSemiconductor"                  
+#define APP_ADV_INTERVAL                300                                   
+#define APP_ADV_DURATION                18000                                  
+#define APP_BLE_OBSERVER_PRIO           3                                      
+#define APP_BLE_CONN_CFG_TAG            1                                       
 
-#define APP_ADV_DURATION                18000                                   /**< The advertising duration (180 seconds) in units of 10 milliseconds. */
-#define APP_BLE_OBSERVER_PRIO           3                                       /**< Application's BLE observer priority. You shouldn't need to modify this value. */
-#define APP_BLE_CONN_CFG_TAG            1                                       /**< A tag identifying the SoftDevice BLE configuration. */
+#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(100, UNIT_1_25_MS)       
+#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(200, UNIT_1_25_MS)       
+#define SLAVE_LATENCY                   0                                      
+#define CONN_SUP_TIMEOUT                MSEC_TO_UNITS(4000, UNIT_10_MS)       
 
-#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(100, UNIT_1_25_MS)        /**< Minimum acceptable connection interval (0.1 seconds). */
-#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(200, UNIT_1_25_MS)        /**< Maximum acceptable connection interval (0.2 second). */
-#define SLAVE_LATENCY                   0                                       /**< Slave latency. */
-#define CONN_SUP_TIMEOUT                MSEC_TO_UNITS(4000, UNIT_10_MS)         /**< Connection supervisory timeout (4 seconds). */
+#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(5000)                  
+#define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000)                 
+#define MAX_CONN_PARAMS_UPDATE_COUNT    3                                      
 
-#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(5000)                   /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
-#define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000)                  /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
-#define MAX_CONN_PARAMS_UPDATE_COUNT    3                                       /**< Number of attempts before giving up the connection parameter negotiation. */
-
-#define DEAD_BEEF                       0xDEADBEEF                              /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
+#define DEAD_BEEF                       0xDEADBEEF                             
 
 
-NRF_BLE_GATT_DEF(m_gatt);                                                       /**< GATT module instance. */
-NRF_BLE_QWR_DEF(m_qwr);                                                         /**< Context for the Queued Write module.*/
-BLE_ADVERTISING_DEF(m_advertising);                                             /**< Advertising module instance. */
-
-static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
+NRF_BLE_GATT_DEF(m_gatt);                                                       
+NRF_BLE_QWR_DEF(m_qwr);                                                         
+BLE_ADVERTISING_DEF(m_advertising);                                            
+static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                      
 static ble_estc_service_t m_estc_service;
 
 static ble_uuid_t m_adv_uuids[] =
@@ -80,26 +67,13 @@ static ble_uuid_t m_adv_uuids[] =
 static void advertising_start(void);
 
 
-/**@brief Callback function for asserts in the SoftDevice.
- *
- * @details This function will be called in case of an assert in the SoftDevice.
- *
- * @warning This handler is an example only and does not fit a final product. You need to analyze
- *          how your product is supposed to react in case of Assert.
- * @warning On assert from the SoftDevice, the system can only recover on reset.
- *
- * @param[in] line_num   Line number of the failing ASSERT call.
- * @param[in] file_name  File name of the failing ASSERT call.
- */
+
 void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
 {
     app_error_handler(DEAD_BEEF, line_num, p_file_name);
 }
 
-/**@brief Function for the Timer initialization.
- *
- * @details Initializes the timer module. This creates and starts application timers.
- */
+
 static void timers_init(void)
 {
     // Initialize timer module.
@@ -108,11 +82,7 @@ static void timers_init(void)
 }
 
 
-/**@brief Function for the GAP initialization.
- *
- * @details This function sets up all the necessary GAP (Generic Access Profile) parameters of the
- *          device including the device name, appearance, and the preferred connection parameters.
- */
+
 static void gap_params_init(void)
 {
     ret_code_t              err_code;
@@ -141,8 +111,7 @@ static void gap_params_init(void)
 }
 
 
-/**@brief Function for initializing the GATT module.
- */
+
 static void gatt_init(void)
 {
     ret_code_t err_code = nrf_ble_gatt_init(&m_gatt, NULL);
@@ -150,20 +119,13 @@ static void gatt_init(void)
 }
 
 
-/**@brief Function for handling Queued Write Module errors.
- *
- * @details A pointer to this function will be passed to each service which may need to inform the
- *          application about an error.
- *
- * @param[in]   nrf_error   Error code containing information about what went wrong.
- */
+
 static void nrf_qwr_error_handler(uint32_t nrf_error)
 {
     APP_ERROR_HANDLER(nrf_error);
 }
 
-/**@brief Function for initializing services that will be used by the application.
- */
+
 static void services_init(void)
 {
     ret_code_t         err_code;
@@ -178,16 +140,7 @@ static void services_init(void)
 }
 
 
-/**@brief Function for handling the Connection Parameters Module.
- *
- * @details This function will be called for all events in the Connection Parameters Module which
- *          are passed to the application.
- *          @note All this function does is to disconnect. This could have been done by simply
- *                setting the disconnect_on_fail config parameter, but instead we use the event
- *                handler mechanism to demonstrate its use.
- *
- * @param[in] p_evt  Event received from the Connection Parameters Module.
- */
+
 static void on_conn_params_evt(ble_conn_params_evt_t * p_evt)
 {
     ret_code_t err_code;
@@ -200,18 +153,14 @@ static void on_conn_params_evt(ble_conn_params_evt_t * p_evt)
 }
 
 
-/**@brief Function for handling a Connection Parameters error.
- *
- * @param[in] nrf_error  Error code containing information about what went wrong.
- */
+
 static void conn_params_error_handler(uint32_t nrf_error)
 {
     APP_ERROR_HANDLER(nrf_error);
 }
 
 
-/**@brief Function for initializing the Connection Parameters module.
- */
+
 static void conn_params_init(void)
 {
     ret_code_t             err_code;
@@ -233,8 +182,7 @@ static void conn_params_init(void)
 }
 
 
-/**@brief Function for starting timers.
- */
+
 static void application_timers_start(void)
 {
     /* YOUR_JOB: Start your timers. below is an example of how to start a timer.
@@ -244,13 +192,6 @@ static void application_timers_start(void)
 
 }
 
-
-/**@brief Function for handling advertising events.
- *
- * @details This function will be called for advertising events which are passed to the application.
- *
- * @param[in] ble_adv_evt  Advertising event.
- */
 static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
 {
     ret_code_t err_code;
@@ -268,12 +209,6 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
     }
 }
 
-
-/**@brief Function for handling BLE events.
- *
- * @param[in]   p_ble_evt   Bluetooth stack event.
- * @param[in]   p_context   Unused.
- */
 static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 {
     ret_code_t err_code = NRF_SUCCESS;
@@ -329,10 +264,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 }
 
 
-/**@brief Function for initializing the BLE stack.
- *
- * @details Initializes the SoftDevice and the BLE event interrupt.
- */
+
 static void ble_stack_init(void)
 {
     ret_code_t err_code;
@@ -340,25 +272,21 @@ static void ble_stack_init(void)
     err_code = nrf_sdh_enable_request();
     APP_ERROR_CHECK(err_code);
 
-    // Configure the BLE stack using the default settings.
-    // Fetch the start address of the application RAM.
+    
     uint32_t ram_start = 0;
     err_code = nrf_sdh_ble_default_cfg_set(APP_BLE_CONN_CFG_TAG, &ram_start);
     APP_ERROR_CHECK(err_code);
 
-    // Enable BLE stack.
+ 
     err_code = nrf_sdh_ble_enable(&ram_start);
     APP_ERROR_CHECK(err_code);
 
-    // Register a handler for BLE events.
+  
     NRF_SDH_BLE_OBSERVER(m_ble_observer, APP_BLE_OBSERVER_PRIO, ble_evt_handler, NULL);
 }
 
 
-/**@brief Function for handling events from the BSP module.
- *
- * @param[in]   event   Event generated when button is pressed.
- */
+
 static void bsp_event_handler(bsp_event_t event)
 {
     ret_code_t err_code;
@@ -379,8 +307,7 @@ static void bsp_event_handler(bsp_event_t event)
 }
 
 
-/**@brief Function for initializing the Advertising functionality.
- */
+
 static void advertising_init(void)
 {
     ret_code_t             err_code;
@@ -391,7 +318,7 @@ static void advertising_init(void)
     init.advdata.name_type = BLE_ADVDATA_FULL_NAME;
     init.advdata.flags     = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
 
-    // TODO: 8. Add service UUIDs to advertising data
+    
     init.advdata.uuids_complete.uuid_cnt =
         sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
     init.advdata.uuids_complete.p_uuids  = m_adv_uuids;
@@ -408,10 +335,7 @@ static void advertising_init(void)
     ble_advertising_conn_cfg_tag_set(&m_advertising, APP_BLE_CONN_CFG_TAG);
 }
 
-/**@brief Function for initializing buttons and leds.
- *
- * @param[out] p_erase_bonds  Will be true if the clear bonding button was pressed to wake the application up.
- */
+
 static void buttons_leds_init(void)
 {
     ret_code_t err_code;
@@ -424,8 +348,7 @@ static void buttons_leds_init(void)
 }
 
 
-/**@brief Function for initializing the nrf log module.
- */
+
 static void log_init(void)
 {
     ret_code_t err_code = NRF_LOG_INIT(NULL);
@@ -435,8 +358,7 @@ static void log_init(void)
 }
 
 
-/**@brief Function for initializing power management.
- */
+
 static void power_management_init(void)
 {
     ret_code_t err_code;
@@ -445,10 +367,7 @@ static void power_management_init(void)
 }
 
 
-/**@brief Function for handling the idle state (main loop).
- *
- * @details If there is no pending log operation, then sleep until next the next event occurs.
- */
+
 static void idle_state_handle(void)
 {
     if (NRF_LOG_PROCESS() == false)
@@ -459,8 +378,7 @@ static void idle_state_handle(void)
 }
 
 
-/**@brief Function for starting advertising.
- */
+
 static void advertising_start(void)
 {
     ret_code_t err_code = ble_advertising_start(&m_advertising, BLE_ADV_MODE_FAST);
@@ -468,8 +386,7 @@ static void advertising_start(void)
 }
 
 
-/**@brief Function for application main entry.
- */
+
 int main(void)
 {
     // Initialize.
@@ -491,14 +408,8 @@ int main(void)
 
     advertising_start();
 
-    // Enter main loop.
     for (;;)
     {
         idle_state_handle();
     }
 }
-
-
-/**
- * @}
- */
