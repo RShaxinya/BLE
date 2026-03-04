@@ -7,13 +7,11 @@
 #include "ble.h"
 #include "sdk_errors.h"
 
-// TODO: 1. Generate random BLE UUID (Version 4 UUID) and define it in the following format:
-#define ESTC_BASE_UUID { 0x89, 0xED, 0x3C, 0x19, 0x84, 0x1A, /* - */ 0x31, 0x97, /* - */ 0x09, 0x42, /* - */ 0x2E, 0x32, /* - */ 0x00, 0x00, 0xA3, 0x3D } // UUID: 3da39048-322e-4209-9731-1a84193ced89
+#define ESTC_BASE_UUID { 0x89, 0xED, 0x3C, 0x19, 0x84, 0x1A, /* - */ 0x31, 0x97, /* - */ 0x09, 0x42, /* - */ 0x2E, 0x32, /* - */ 0x00, 0x00, 0xA3, 0x3D }
 
-// TODO: 2. Pick a random service 16-bit UUID and define it:
 #define ESTC_SERVICE_UUID 0x6577
 
-// TODO: 3. Pick a characteristic UUID and define it:
+
 #define ESTC_GATT_CHAR_1_UUID 0x6578
 
 typedef struct
@@ -22,7 +20,7 @@ typedef struct
     uint16_t connection_handle;
     uint8_t uuid_type;
 
-    // TODO: 6.3. Add handles for characterstic (type: ble_gatts_char_handles_t)
+   
     ble_gatts_char_handles_t char1_handles;
 } ble_estc_service_t;
 
